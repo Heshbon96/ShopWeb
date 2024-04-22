@@ -4,7 +4,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const errorController = require('./controllers/error');
-const db = require('./util/database');
+const sequelize = require('./util/database');
+const Product = require('./models/product');
+const User = require('./models/user');
 
 const app = express();
 
@@ -13,17 +15,6 @@ app.set('views', 'views');
 
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
-
-//testing
-// db.execute('SELECT * FROM products')
-//   .then((result) => {
-//     console.log(result[0], result[1]);
-//   })
-//   .catch((err) => {
-//     console.log(err);
-//   });
-
-///////////////
 
 ////////////////
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -34,5 +25,35 @@ app.use(shopRoutes);
 
 app.use(errorController.get404);
 
-app.listen(3000);
+///linking associations
+Product.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
+User.hasMany(Product);
 
+///
+sequelize
+  .sync()
+  .then((result) => {
+    return User.FindById(1);
+    // console.log(result);
+  })
+  .then((user) => {
+    if (!user) {
+      return User.create({
+        name: 'Makda',
+        email: 'test@test.com',
+      });
+    }
+    return Promise.resolve(user);
+  })
+  .then((user) => {
+    // console.log(user);
+    return user.createCart();
+  })
+  .then((cart) => {
+    app.listen(3000);
+  })
+
+  .catch((err) => {
+    // console.log(err);
+    //
+  });
